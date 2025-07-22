@@ -1,11 +1,14 @@
 import os
 import json
 import requests
+import asyncio
+import time
 from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from requests.auth import HTTPBasicAuth
+from multi_tool_agent.agent import root_agent
 
 load_dotenv()
 
@@ -57,7 +60,8 @@ class UserManager:
             },
             'triage_completed': False,
             'current_triage_step': 0,
-            'messages': []
+            'messages': [],
+            'adk_conversation_id': f"conv_{phone_number}_{int(time.time())}"
         }
         
         file_path = self.get_user_file_path(phone_number)
@@ -123,6 +127,18 @@ class UserManager:
         
         self.save_user(phone_number, user_data)
         return user_data
+    
+    def get_adk_conversation_id(self, phone_number):
+        """Get or create ADK conversation ID for user."""
+        user_data = self.load_user(phone_number)
+        if not user_data:
+            return None
+            
+        if 'adk_conversation_id' not in user_data:
+            user_data['adk_conversation_id'] = f"conv_{phone_number}_{int(time.time())}"
+            self.save_user(phone_number, user_data)
+            
+        return user_data['adk_conversation_id']
 
 # Initialize user manager
 user_manager = UserManager()
@@ -136,6 +152,29 @@ def respond(message):
 def get_clean_phone_number(sender):
     """Extract clean phone number from sender field."""
     return sender.split(':')[1] if ':' in sender else sender
+
+async def process_with_adk_agent(phone_number, message):
+    """Process message with ADK agent."""
+    try:
+        # Get conversation ID
+        conv_id = user_manager.get_adk_conversation_id(phone_number)
+        if not conv_id:
+            return "Sorry, I couldn't find your conversation. Please try again."
+        
+        # Call the ADK agent
+        response = await root_agent.chat(
+            conv_id,
+            message,
+            tools_context={'phone_number': phone_number}
+        )
+        
+        return response.content
+        
+    except Exception as e:
+        print(f"ADK processing error: {e}")
+        import traceback
+        traceback.print_exc()
+        return "I'm having trouble processing that right now. Can you try again?"
 
 @app.route('/message', methods=['POST'])
 def reply():
@@ -193,24 +232,17 @@ def reply():
         return respond("Hello! Send me an image or describe your health concern.")
 
 def handle_text_message(sender, message, phone_number):
-    """Handle regular text messages."""
+    """Handle regular text messages with ADK agent."""
     # Add message to user history
     user_manager.add_message(sender, 'text', message)
     
-    # Simple response for health service
-    user_data = user_manager.load_user(sender)
-    name = user_data['profile']['name'] if user_data and user_data['profile']['name'] else 'there'
-    
-    # Basic health-related responses
-    message_lower = message.lower()
-    if any(word in message_lower for word in ['hello', 'hi', 'hey']):
-        return respond(f"Hello {name}! How can I help you with your health today?")
-    elif any(word in message_lower for word in ['pain', 'hurt', 'ache']):
-        return respond("I understand you're experiencing pain. Can you describe where it hurts and how long you've been feeling this way?")
-    elif any(word in message_lower for word in ['help', 'what', 'how']):
-        return respond("I'm here to help with your health concerns. You can describe symptoms, send images, or ask health-related questions.")
-    else:
-        return respond(f"Thank you for sharing that, {name}. Can you provide more details about your concern?")
+    # Process with ADK agent
+    try:
+        adk_response = asyncio.run(process_with_adk_agent(sender, message))
+        return respond(adk_response)
+    except Exception as e:
+        print(f"Error in handle_text_message: {e}")
+        return respond("I'm having trouble processing your message. Please try again.")
 
 def handle_image_message(sender, message, media_url, media_content_type, phone_number):
     """Handle image messages."""
@@ -260,7 +292,16 @@ def handle_image_message(sender, message, media_url, media_content_type, phone_n
         user_data = user_manager.load_user(sender)
         name = user_data['profile']['name'] if user_data and user_data['profile']['name'] else 'there'
         
-        return respond(f"Thank you {name}! I've received your image ({filename_base}). Can you describe what you're showing me?")
+        # If there's text with the image, process it with ADK agent
+        if message.strip():
+            try:
+                adk_response = asyncio.run(process_with_adk_agent(sender, f"Image saved: {message}"))
+                return respond(f"Thank you {name}! I've received your image. {adk_response}")
+            except Exception as e:
+                print(f"Error processing image with ADK: {e}")
+                return respond(f"Thank you {name}! I've received your image ({filename_base}). Can you describe what you're showing me?")
+        else:
+            return respond(f"Thank you {name}! I've received your image ({filename_base}). Can you describe what you're showing me?")
         
     except requests.exceptions.HTTPError as e:
         print(f"HTTP Error downloading image: {e}")
@@ -274,11 +315,12 @@ def handle_image_message(sender, message, media_url, media_content_type, phone_n
 def index():
     """Simple index page to verify the app is running."""
     return """
-    <h1>Health Service WhatsApp Bot</h1>
-    <p>A health assistance service that collects patient information and receives images via WhatsApp.</p>
+    <h1>NutriMate WhatsApp Bot with ADK Agent</h1>
+    <p>A health assistance service that uses Google ADK agent for intelligent conversations and receives images via WhatsApp.</p>
     <h3>Features:</h3>
     <ul>
         <li>Initial triage questionnaire for new users</li>
+        <li>Google ADK agent for intelligent health conversations</li>
         <li>Image storage for health-related photos</li>
         <li>Message history tracking per patient</li>
         <li>Health-focused conversation handling</li>
