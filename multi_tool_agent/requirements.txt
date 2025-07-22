@@ -1,0 +1,5 @@
+google-adk>=1.7.0
+flask>=2.3.0
+twilio>=8.10.0
+python-dotenv>=1.0.0
+requests>=2.31.0 
