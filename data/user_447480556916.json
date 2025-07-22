@@ -1,0 +1,46 @@
+{
+  "phone_number": "whatsapp:+447480556916",
+  "created_at": "2025-07-22T19:21:44.244903",
+  "profile": {
+    "name": "Ellis Hewes",
+    "age": "19",
+    "location": "London",
+    "health_concern": "my main health concern is im diabetic"
+  },
+  "triage_completed": true,
+  "current_triage_step": 4,
+  "messages": [
+    {
+      "timestamp": "2025-07-22T19:21:50.349572",
+      "type": "text",
+      "content": "Ellis Hewes",
+      "media_url": null,
+      "media_type": null,
+      "saved_filename": null
+    },
+    {
+      "timestamp": "2025-07-22T19:21:57.713632",
+      "type": "text",
+      "content": "19",
+      "media_url": null,
+      "media_type": null,
+      "saved_filename": null
+    },
+    {
+      "timestamp": "2025-07-22T19:22:56.031703",
+      "type": "text",
+      "content": "London",
+      "media_url": null,
+      "media_type": null,
+      "saved_filename": null
+    },
+    {
+      "timestamp": "2025-07-22T19:23:13.547751",
+      "type": "text",
+      "content": "my main health concern is im diabetic",
+      "media_url": null,
+      "media_type": null,
+      "saved_filename": null
+    }
+  ]
+}

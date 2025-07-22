@@ -1,0 +1,17 @@
+{
+  "triage_questions": [
+    "Hello! Welcome to UM-GemiFish. What's your name?",
+    "Thanks {name}! What's your age?",
+    "Great! What's your location/city?",
+    "Perfect! What type of fishing are you most interested in? (e.g., freshwater, saltwater, fly fishing)",
+    "Excellent! You're all set up. You can now send me images of fish or ask questions about fishing!"
+  ],
+  "welcome_message": "Welcome aboard, {name}! Your profile is complete. Send me fish images or ask fishing questions anytime!",
+  "responses": {
+    "greeting": "Hello {name}! How can I help you with fishing today?",
+    "fishing_question": "Great question about fishing! Feel free to send me images of your catches or ask specific questions.",
+    "help": "I can help you identify fish, give fishing tips, and store your catch images. Just send me photos or ask questions!",
+    "default": "Thanks for your message, {name}! Send me fish images or ask fishing questions anytime.",
+    "image_received": "Great catch, {name}! Your image \"{filename}\" has been saved successfully. What kind of fish is this?"
+  }
+}
